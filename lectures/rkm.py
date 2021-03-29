@@ -11,17 +11,17 @@ class EmbeddedExplicitRungeKutta:
         self.bhat = bhat
         self.order = order
 
-
     def __call__(self, y0, t0, T, f, Nmax, tol=1e-3):
         # Extract Butcher table
         a, b, c, bhat, order = self.a, self.b, self.c, self.bhat, self.order
 
-        # Some parameters controlling the time-step choice 
-        # Machine precision
-        eps = 1e-15
-        fac = 0.8
-        facmax = 5.0
+        # pessisimistic factor used in the new time-step computation 
+        fac = 0.8     
+        # some more advanced parameters for better controlling of time-step choice
+        eps = 1e-15   # machine precision
+        facmax = 5.0  # Maxima
         facmin = 0.1
+        
         err  = 0
         
         # Stages
@@ -65,23 +65,22 @@ class EmbeddedExplicitRungeKutta:
                     dyhat += bhat[j]*ks[j]
 
                 # Error estimate
-                # err = dt*norm(dy - dyhat)
-
-                # ALTERNATIVE: more robus
-                err = max(dt*norm(dy - dyhat), norm(y)*eps)
+                err = dt*norm(dy - dyhat)
+                # ALTERNATIVE: more robust
+                #err = max(dt*norm(dy - dyhat), norm(y)*eps)
 
                 # Accept time-step
                 if err <= tol:
                     ys.append(y + dt*dyhat)
                     ts.append(t + dt)
                 else:
-                    print(f"Step is rejected at t = {t} with err = {err}")
+                    #print(f"Step is rejected at t = {t} with err = {err}")
                     N_rej += 1
                 
                 # Compute New step size
-                #dt = 0.8*(tol/err)**(1/(order+1))*dt
+                dt = fac*(tol/err)**(1/(order+1))*dt
                 # MORE ROBUST ALTERNATIVE
-                dt = min(dt*min(facmax, max(facmin, fac*(tol/err)**(1/(order+1)))),abs(T-ts[-1]))
+                #dt = min(dt*min(facmax, max(facmin, fac*(tol/err)**(1/(order+1)))),abs(T-ts[-1]))
         
         print(f"Finishing time-stepping reaching t = {ts[-1]} with final time T = {T}")
         print(f"Used {N} steps out of {Nmax} with {N_rej} being rejected")
