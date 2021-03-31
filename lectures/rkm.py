@@ -1,7 +1,5 @@
 import numpy as np
 from numpy.linalg import norm, solve
-import matplotlib.pyplot as plt
-
 
 class EmbeddedExplicitRungeKutta:
     def __init__(self, a, b, c,  bhat=None, order=None):
@@ -17,7 +15,7 @@ class EmbeddedExplicitRungeKutta:
 
         # pessisimistic factor used in the new time-step computation 
         fac = 0.8     
-        # some more advanced parameters for better controlling of time-step choice
+        # some more advanced parameters for better controlling of time-step choice for higher-order methods
         eps = 1e-15   # machine precision
         facmax = 5.0  # Maxima
         facmin = 0.1
@@ -66,23 +64,27 @@ class EmbeddedExplicitRungeKutta:
 
                 # Error estimate
                 err = dt*norm(dy - dyhat)
-                # ALTERNATIVE: more robust
-                #err = max(dt*norm(dy - dyhat), norm(y)*eps)
 
                 # Accept time-step
                 if err <= tol:
+                # ALTERNATIVE: more robust, activate this one for FEHLBERG
+#                 if err <= tol + tol*norm(y):
+                
                     ys.append(y + dt*dyhat)
                     ts.append(t + dt)
                 else:
                     #print(f"Step is rejected at t = {t} with err = {err}")
                     N_rej += 1
                 
-                # Compute New step size
+                # Compute new step size
                 dt = fac*(tol/err)**(1/(order+1))*dt
-                # MORE ROBUST ALTERNATIVE
-                #dt = min(dt*min(facmax, max(facmin, fac*(tol/err)**(1/(order+1)))),abs(T-ts[-1]))
+                # Decrease time-step further if we go beyond T
+                dt = min(dt,abs(T-ts[-1]))
+                # ALTERNATIVE: more robust, activate this one for FEHLBERG
+#                 dt = min(dt*min(facmax, max(facmin, fac*(tol/err)**(1/(order+1)))),abs(T-ts[-1]))
         
         print(f"Finishing time-stepping reaching t = {ts[-1]} with final time T = {T}")
         print(f"Used {N} steps out of {Nmax} with {N_rej} being rejected")
           
         return (np.array(ts), np.array(ys))
+
